@@ -1,0 +1,34 @@
+{
+  "name": "world-globe-3d",
+  "version": "1.0.0",
+  "description": "A world globe graphical UI to build upon based on three.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "vite build",
+    "dev": "npx vite"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/petros-greece/world-globe-3d.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/petros-greece/world-globe-3d/issues"
+  },
+  "homepage": "https://github.com/petros-greece/world-globe-3d#readme",
+  "devDependencies": {
+    "@types/gsap": "^1.20.2",
+    "@types/node": "^24.0.12",
+    "@types/three": "^0.178.1",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.3"
+  },
+  "dependencies": {
+    "gsap": "^3.13.0",
+    "three": "^0.178.0"
+  }
+}
