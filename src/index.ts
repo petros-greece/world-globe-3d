@@ -523,16 +523,6 @@ export class InteractiveGlobe {
 		}
 	}
 
-
-
-
-
-
-
-
-
-
-
 	private detectCountryFromUV(uv = { x: 0, y: 0 }): number | null {
 		// 🎯 Convert UV coordinates (from raycasting) to SVG coordinate space
 		const point = this.svgMap.createSVGPoint();
@@ -572,10 +562,10 @@ export class InteractiveGlobe {
 	}
 
 	private renderWithSimpleHover(idx: number) {
-		// 1️⃣ Clone the empty SVG container so we don’t mutate the live one
+		// Clone the empty SVG container so we don’t mutate the live one
 		const highlightSvg = this.countryHighlightEl.cloneNode(false) as SVGSVGElement;
 
-		// 2️⃣ Apply the same sizing/viewport/colour attributes you use in updateSelectionTexture()
+		// Apply the same sizing/viewport/colour attributes you use in updateSelectionTexture()
 		gsap.set(highlightSvg, {
 			attr: {
 				viewBox: `0 ${this.offsetY * this.svgViewBox[1]} ${this.svgViewBox[0]} ${this.svgViewBox[1]}`,
@@ -587,12 +577,12 @@ export class InteractiveGlobe {
 			},
 		});
 
-		// 3️⃣ Clone just the one path we’re hovering, and give it the hover fill
+		// Clone just the one path we’re hovering, and give it the hover fill
 		const origPath = this.svgCountries[idx];
 		const pathClone = origPath.cloneNode(true) as SVGPathElement;
 		pathClone.setAttribute("fill", this.params.hoverColor);
 
-		// 4️⃣ Append it, serialize, store & apply
+		// Append it, serialize, store & apply
 		highlightSvg.appendChild(pathClone);
 		const svgData = new XMLSerializer().serializeToString(highlightSvg);
 		this.dataUris[idx] = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgData)}`;
@@ -614,6 +604,7 @@ export class InteractiveGlobe {
 
 			// 🔍 Detect intersection with the globe's stroke mesh
 			const intersects = this.rayCaster.intersectObject(this.globeStrokesMesh);
+			//console.log(intersects)
 			if (intersects.length) {
 				const uv = intersects[0].uv; // 📍 Get UV coords of intersection
 				const idx = this.detectCountryFromUV(uv); // 🗺 Find matching country path
@@ -621,7 +612,7 @@ export class InteractiveGlobe {
 				if (idx !== null && idx !== this.hoveredCountryIdx) {
 
 					//this.renderWithPerCountryHover(idx);
-					this.renderWithSimpleHover(idx); // Alternative hover rendering
+					//this.renderWithSimpleHover(idx); // Alternative hover rendering
 
 					// 📝 Show the country's name
 					if (this.countryNameEl) {
@@ -632,6 +623,12 @@ export class InteractiveGlobe {
 					this.updateBaseTexture();
 
 				}
+				else{
+							this.setMapTexture(
+			this.globeSelectionOuterMesh.material as SetMapTextureMaterial,
+			this.dataUris[0]
+		);
+				}
 			}
 		}
 
@@ -641,6 +638,8 @@ export class InteractiveGlobe {
 		// 🖥️ Final render
 		this.renderer.render(this.scene, this.camera);
 	};
+
+
 
 
 	private getRotateSpeedFromZoom(zoom: number): number {
@@ -681,8 +680,8 @@ export class InteractiveGlobe {
 		}
 		else{
 			this.obj[`${countryName}`] = {
-				lat: lat.toFixed(2),
-				lon: lon.toFixed(2)
+				lat: Number(lat.toFixed(2)),
+				lon: Number(lon.toFixed(2))
 			};
 		}
 		console.log(this.obj);
@@ -775,10 +774,10 @@ setTimeout(() => {
 	console.log(globe)
 	//globe.clearSelection()
 	// Update the base texture to reflect any changes made to the SVG map
-globe.focusLatLon({
-  "lat": 23.40,
-  "lon": 70.90
-});
+// globe.focusLatLon({
+//   "lat": 23.40,
+//   "lon": 70.90
+// });
 	//globe.focusOnCountry("Argentina"); // Focus on Finland
 
 
