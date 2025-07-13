@@ -23,9 +23,9 @@ type PositionT = 'start' | 'center' | 'end';
 
 export class InteractiveGlobe {
 
-	public obj:any = {};
+	public obj: any = {};
 
-	private container: HTMLElement;
+	public container: HTMLElement;
 	private canvas: HTMLCanvasElement;
 	private svgMap: SVGSVGElement;
 	private svgCountries: SVGPathElement[] = [];
@@ -365,6 +365,17 @@ export class InteractiveGlobe {
 					// Display the name of the clicked country
 					const path = this.svgCountries[idx];
 					const name = path.getAttribute("data-name") ?? "";
+
+					// Dispatch a custom event
+					this.container.dispatchEvent(new CustomEvent("countryClick", {
+						detail: {
+							name,
+							index: idx,
+							path,
+						},
+						bubbles: true, // optional, allows the event to bubble up
+					}));
+
 					if (this.countryNameEl) this.countryNameEl.innerHTML = name;
 
 					// Highlight the selected country using its unique texture
@@ -561,6 +572,25 @@ export class InteractiveGlobe {
 		// These NDC coordinates are used by THREE.Raycaster to trace rays correctly
 	}
 
+	private getRotateSpeedFromZoom(zoom: number): number {
+		// Define zoom boundaries
+		const minZoom = 0.5;
+		const maxZoom = 3.0;
+
+		// Define rotation speed range
+		const minSpeed = 0.5;
+		const maxSpeed = 2.5;
+
+		// Normalize zoom value to a 0–1 range
+		const t = (zoom - minZoom) / (maxZoom - minZoom);
+
+		// Interpolate rotation speed: faster at low zoom, slower when zoomed in
+		const speed = minSpeed + (1 - t) * (maxSpeed - minSpeed);
+
+		// Clamp the result to ensure it's within valid speed range
+		return THREE.MathUtils.clamp(speed, minSpeed, maxSpeed);
+	}
+
 	private renderWithSimpleHover(idx: number) {
 		// Clone the empty SVG container so we don’t mutate the live one
 		const highlightSvg = this.countryHighlightEl.cloneNode(false) as SVGSVGElement;
@@ -593,16 +623,16 @@ export class InteractiveGlobe {
 	}
 
 	private render = () => {
-		// 🌀 Adjust rotation speed based on zoom level
+		// Adjust rotation speed based on zoom level
 		this.controls.rotateSpeed = this.getRotateSpeedFromZoom(this.camera.zoom);
 		this.controls.update(); // Apply any ongoing camera transformations (like damping)
 
-		// 🖱️ Handle hover interaction only if allowed
+		// Handle hover interaction only if allowed
 		if (this.isHoverable) {
-			// 🎯 Update raycaster from current pointer position
+			// Update raycaster from current pointer position
 			this.rayCaster.setFromCamera(this.pointer, this.camera);
 
-			// 🔍 Detect intersection with the globe's stroke mesh
+			// Detect intersection with the globe's stroke mesh
 			const intersects = this.rayCaster.intersectObject(this.globeStrokesMesh);
 			//console.log(intersects)
 			if (intersects.length) {
@@ -611,55 +641,34 @@ export class InteractiveGlobe {
 
 				if (idx !== null && idx !== this.hoveredCountryIdx) {
 
-					//this.renderWithPerCountryHover(idx);
-					//this.renderWithSimpleHover(idx); // Alternative hover rendering
+					this.renderWithSimpleHover(idx);
 
-					// 📝 Show the country's name
+					// Show the country's name
 					if (this.countryNameEl) {
 						const name = this.svgCountries[idx].getAttribute("data-name");
 						this.countryNameEl.innerHTML = name + ` --  ${this.hoveredCountryIdx}` || "";
 					}
-					// ♻️ Refresh base texture to reflect color changes
-					this.updateBaseTexture();
-
 				}
-				else{
-							this.setMapTexture(
-			this.globeSelectionOuterMesh.material as SetMapTextureMaterial,
-			this.dataUris[0]
-		);
+				else {
+					this.setMapTexture(
+						this.globeSelectionOuterMesh.material as SetMapTextureMaterial,
+						this.dataUris[0]
+					);
 				}
 			}
 		}
 
-		// 📱 Disable hover if device is touch-based
+		// Disable hover if device is touch-based
 		if (this.isTouchScreen && this.isHoverable) this.isHoverable = false;
 
-		// 🖥️ Final render
+		// Final render
 		this.renderer.render(this.scene, this.camera);
 	};
 
 
 
 
-	private getRotateSpeedFromZoom(zoom: number): number {
-		// 🔢 Define zoom boundaries
-		const minZoom = 0.5;
-		const maxZoom = 3.0;
 
-		// 🚀 Define rotation speed range
-		const minSpeed = 0.5;
-		const maxSpeed = 2.5;
-
-		// 📈 Normalize zoom value to a 0–1 range
-		const t = (zoom - minZoom) / (maxZoom - minZoom);
-
-		// 🌀 Interpolate rotation speed: faster at low zoom, slower when zoomed in
-		const speed = minSpeed + (1 - t) * (maxSpeed - minSpeed);
-
-		// 🔒 Clamp the result to ensure it's within valid speed range
-		return THREE.MathUtils.clamp(speed, minSpeed, maxSpeed);
-	}
 
 	private logCameraDirectionAsLatLon() {
 		const cameraToGlobe = new THREE.Vector3()
@@ -672,13 +681,13 @@ export class InteractiveGlobe {
 		const countryElement = this.svgCountries[this.hoveredCountryIdx];
 		const countryName = countryElement?.getAttribute("data-name");
 
-		console.log({lat:lat.toFixed(2), lon: lon.toFixed(2), country: countryName} );
+		console.log({ lat: lat.toFixed(2), lon: lon.toFixed(2), country: countryName });
 
-		if(this.obj[`${countryName}`]) {
+		if (this.obj[`${countryName}`]) {
 			this.obj[`${countryName}`].lat = lat.toFixed(2);
 			this.obj[`${countryName}`].lon = lon.toFixed(2);
 		}
-		else{
+		else {
 			this.obj[`${countryName}`] = {
 				lat: Number(lat.toFixed(2)),
 				lon: Number(lon.toFixed(2))
@@ -767,17 +776,24 @@ const globe = await InteractiveGlobe.create(".globe-wrapper", {
 		'#DC143C', // Crimson Red
 		'#2E8B57'  // Sea Green
 	]
+});
 
+
+globe.container.addEventListener("countryClick", (e: Event) => {
+	const event = e as CustomEvent;
+	console.log("Clicked country:", event.detail.name, event.detail.index);
+
+	// You can now use event.detail.name, .index, .path, etc.
 });
 
 setTimeout(() => {
 	console.log(globe)
 	//globe.clearSelection()
 	// Update the base texture to reflect any changes made to the SVG map
-// globe.focusLatLon({
-//   "lat": 23.40,
-//   "lon": 70.90
-// });
+	// globe.focusLatLon({
+	//   "lat": 23.40,
+	//   "lon": 70.90
+	// });
 	//globe.focusOnCountry("Argentina"); // Focus on Finland
 
 
