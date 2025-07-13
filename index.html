@@ -1,116 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <title>Three.js Basic Scene</title>
+  <title>Globe 3D</title>
+  <link rel="stylesheet" href="/src/assets/styles.css" />
 
-
-  <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      font-family: sans-serif;
-    }
-
-    .page {
-      width: 100%;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-      z-index: 1;
-    }
-
-    .globe-wrapper {
-      /* margin-top: 9vh; */
-      position: relative;
-    }
-
-    .info {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      text-align: center;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      pointer-events: none;
-    }
-
-    .info span {
-      font-weight: bold;
-      text-shadow: 0 0 5px #ffffff;
-      padding: .2em .6em;
-      border-radius: 2px;
-      font-size: 2em;
-    }
-
-    canvas {
-      cursor: pointer;
-      user-select: none;
-    }
-
-    svg {
-      position: fixed;
-      top: 0;
-      visibility: hidden;
-    }
-
-    .lil-gui {
-      --width: 350px;
-      max-width: 90%;
-      font-size: 15px;
-      --padding: 10px;
-      --spacing: 10px;
-      --background-color: rgba(5, 0, 15, .8);
-      --font-family: monospace;
-    }
-  </style>
 </head>
 
 <body>
 
-<div class="page">
+  <div class="page">
     <div class="globe-wrapper">
-        <canvas id="globe-3d"></canvas>
-        <div class="info"><span></span></div>
     </div>
-</div>
-
-<svg id="map-container"></svg>
-
-<svg id="country"></svg>
-    <!-- <script>
-        // Select all <path> elements inside the SVG
-        const paths = document.getElementsByTagName('path');
-const arr = [];
-        // Add event listeners for hover on each path
-        Array.from(paths).forEach(path => {
-            path.addEventListener('mouseover', function() {
-                console.log('Hovered on path with class:', path.getAttribute('class')); // Logs class (if any)
-                path.style.fill = 'coral'; // Change color on hover
-            });
-
-            path.addEventListener('mouseout', function() {
-                path.style.fill = 'lightblue'; // Revert color when not hovered
-            });
-      arr.push({
-        path: path.getAttribute('d'),
-        name: path.getAttribute('data-name')
-      })
-
-        });
+  </div>
 
 
-				  console.log(arr)
-    </script> -->
-    <script type="module" src="/src/index.ts"></script>
+
+  <script type="module" src="/src/index.ts"></script>
+
+
 </body>
+
 </html>

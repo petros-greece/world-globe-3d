@@ -1,0 +1,50 @@
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+
+.page {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.globe-wrapper {
+  /* margin-top: 9vh; */
+  position: relative;
+}
+
+.info {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  height: 100%;
+  display: flex;
+  /* justify-content: center;
+  align-items: start; */
+  pointer-events: none;
+}
+
+.info span {
+  font-weight: bold;
+  text-shadow: 0 0 5px #ffffff;
+  padding: .2em .6em;
+  border-radius: 2px;
+  font-size: 2em;
+}
+
+
+
+.globe-wrapper canvas {
+  cursor: pointer;
+  user-select: none;
+}
+
