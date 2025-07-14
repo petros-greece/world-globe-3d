@@ -2,10 +2,13 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import gsap, { set } from 'gsap';
 
+const list: string[] = [];
 
 interface CountryPath {
 	path: string;
 	name: string;
+	x: number;
+	y: number;
 }
 
 interface BoundingBox {
@@ -25,12 +28,14 @@ export class InteractiveGlobe {
 
 	public obj: any = {};
 
-	public container: HTMLElement;
-	private canvas: HTMLCanvasElement;
-	private svgMap: SVGSVGElement;
+	public countryCoordsObj: { [countryName: string]: { x: number; y: number, i: number } } = {};
+
+	public container!: HTMLElement;
+	private canvas!: HTMLCanvasElement;
+	private svgMap!: SVGSVGElement;
 	private svgCountries: SVGPathElement[] = [];
-	private countryHighlightEl: SVGSVGElement;
-	private countryNameEl: HTMLElement | null;
+	private countryHighlightEl!: SVGSVGElement;
+	private countryNameEl!: HTMLElement | null;
 
 	private renderer!: THREE.WebGLRenderer;
 	private scene!: THREE.Scene;
@@ -50,11 +55,13 @@ export class InteractiveGlobe {
 	private isTouchScreen = false;
 	private isHoverable = true;
 
+
+
 	private readonly textureLoader = new THREE.TextureLoader();
 	private readonly offsetY = -0.1;
 	private readonly svgViewBox = [2000, 1000];
-	private static readonly mapDomId = 'map';
-	private staticMapUri: string = '';
+	private readonly mapDomId = 'map';
+
 
 
 	private readonly params = {
@@ -73,77 +80,91 @@ export class InteractiveGlobe {
 		palette: ["#9a9591", "#00C9A2", "#111111", "#e4e5e6"],
 		minZoom: 0.5,
 		maxZoom: 10,
+		seaColor: '#2196f3'
 
 	};
 
-	constructor(wrapperSelector: string, params: any = {}) {
-
-		Object.assign(this.params, params);
-
+	constructor(wrapperSelector: string) {
 		const container = document.querySelector(wrapperSelector);
 		if (!container) throw new Error("Container not found");
 		this.container = container as HTMLElement;
+		this.container.style.position = 'relative';
+	}
 
-		const canvas = this.container.querySelector("canvas") as HTMLCanvasElement;
-		if (!canvas) throw new Error("Canvas not found");
-		this.canvas = canvas;
+	async create(params: any) {
 
-		const mapEl = document.querySelector(`#${InteractiveGlobe.mapDomId}`) as SVGSVGElement;
-		if (!mapEl) throw new Error("SVG map element '#map' not found");
-		this.svgMap = mapEl;
-		this.svgCountries = Array.from(this.svgMap.querySelectorAll("path"));
+		Object.assign(this.params, params);
 
-		const countryHighlightEl = this.container.querySelector(".country") as SVGSVGElement;
-		if (!countryHighlightEl) throw new Error("Country highlight SVG not found");
-		this.countryHighlightEl = countryHighlightEl;
-
-		this.countryNameEl = document.querySelector(".info span");
-
+		const response = await fetch("/country-paths.json");
+		const countries: CountryPath[] = await response.json();
+		this.createGlobeDOMStructure();
+		this.renderSvgMapOnDOM(countries);
+		this.generateCoordsObj(countries);
+		this.initGlobeDOMProprs();
 		this.init();
+
 	}
 
-	public static async create(wrapperSelector: string, params: any): Promise<InteractiveGlobe> {
-		this.createGlobeDOMStructure(wrapperSelector, params);
-		await this.renderSvgMapOnDOM(".map-svg-container", params);
-		return new InteractiveGlobe(wrapperSelector, params);
-	}
-
-	private static createGlobeDOMStructure(wrapperSelector: string, params: any = {}) {
-		const wrapper = document.querySelector(wrapperSelector);
-		if (!wrapper) throw new Error("Container not found");
+	private createGlobeDOMStructure() {
 
 		// Canvas
 		const canvas = document.createElement('canvas');
-		wrapper.appendChild(canvas);
+		Object.assign(canvas.style, {
+			cursor: "pointer",
+			userSelect: "none",
+		});
+		this.container.appendChild(canvas);
 
 		// Info display
 		const infoDiv = document.createElement('div');
 		Object.assign(infoDiv.style, {
-			justifyContent: params.infoPositionX,
-			alignItems: params.infoPositionY,
+			position: "absolute",
+			top: "0",
+			left: "0",
+			width: "100%",
+			height: "100%",
+			textAlign: "center",
+			display: "flex",
+			pointerEvents: "none",
+			justifyContent: this.params.infoPositionX,
+			alignItems: this.params.infoPositionY,
 		});
 
 		infoDiv.className = 'info';
 		const infoSpan = document.createElement('span');
+		Object.assign(infoSpan.style, {
+			fontWeight: "bold",
+			textShadow: "0 0 5px #ffffff",
+			padding: ".2em .6em",
+			borderRadius: "2px",
+			fontSize: "2em",
+		});
+
 		infoDiv.appendChild(infoSpan);
-		wrapper.appendChild(infoDiv);
+		this.container.appendChild(infoDiv);
 
 		// SVG map container
 		const mapContainer = document.createElement('div');
 		mapContainer.className = 'map-svg-container';
-		wrapper.appendChild(mapContainer);
+		this.container.appendChild(mapContainer);
 
 		// Highlight SVG (for selected/hovered country)
 		const highlightSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		Object.assign(highlightSvg.style, {
+			position: "absolute",
+			top: "0",
+			left: "0",
+			width: "100%",
+			height: "100%",
+			pointerEvents: "none",
+		});
 		highlightSvg.classList.add('country');
-		wrapper.appendChild(highlightSvg);
+		this.container.appendChild(highlightSvg);
 
 	}
 
 	// Fetch and render the SVG map from a JSON file
-	private static async renderSvgMapOnDOM(containerSelector: string, params: any) {
-		const response = await fetch("/country-paths.json");
-		const countries: CountryPath[] = await response.json();
+	private renderSvgMapOnDOM(countries: any) {
 
 		const svgNS = "http://www.w3.org/2000/svg";
 
@@ -162,7 +183,7 @@ export class InteractiveGlobe {
 			path.setAttribute("d", country.path);
 			path.setAttribute("data-name", country.name);
 
-			if (params.colorType === 'random') {
+			if (this.params.colorType === 'random') {
 				const r = Math.floor(Math.random() * 256);
 				const g = Math.floor(Math.random() * 256);
 				const b = Math.floor(Math.random() * 256);
@@ -170,30 +191,41 @@ export class InteractiveGlobe {
 				//path.setAttribute("data-original-color", randomColor);
 				path.setAttribute("fill", randomColor);
 			}
-			else if (params.colorType === 'palette') {
-				const palette = params.palette || ['#cccccc']; // Fallback color if palette not provided
+			else if (this.params.colorType === 'palette') {
+				const palette = this.params.palette || ['#cccccc']; // Fallback color if palette not provided
 				const randomColor = palette[Math.floor(Math.random() * palette.length)];
 				//path.setAttribute("data-original-color", randomColor);
 				path.setAttribute("fill", randomColor);
 			}
-
-
-			// path.setAttribute("fill", randomColor);
-			// path.setAttribute("style", `fill: ${randomColor}`);
-			// path.setAttribute("stroke", "#333");
-			// path.setAttribute("stroke-width", "1");
 			svg.appendChild(path);
 		}
+		this.container.appendChild(svg);
 
-		const container = document.querySelector(containerSelector);
-		if (container) {
-			container.innerHTML = ""; // clear existing
-			container.appendChild(svg);
-		} else {
-			console.error(`Container element with id '${containerSelector}' not found.`);
+	}
+
+	private generateCoordsObj(countries: any) {
+		for (let i = 0; i < countries.length; i++) {
+
+			const country = countries[i];
+
+			// Ensure each country has a name and path
+			if (!country.name || !country.path) {
+				//console.warn(`Country data missing name or path:`, country);
+				continue;
+			}
+
+			if (country.x && country.y) {
+				this.countryCoordsObj[country.name] = {
+					x: country.x,
+					y: country.y,
+					i: i
+				};
+			}
+			else {
+				list.push(country.name);
+			}
+
 		}
-
-
 	}
 
 	/** GLOBE IINITIALAZATION ************************************************************** */
@@ -222,6 +254,26 @@ export class InteractiveGlobe {
 		//start the loop
 		gsap.ticker.add(this.render);
 
+
+
+	}
+
+	private initGlobeDOMProprs() {
+
+		const canvas = this.container.querySelector("canvas") as HTMLCanvasElement;
+		if (!canvas) throw new Error("Canvas not found");
+		this.canvas = canvas;
+
+		const mapEl = document.querySelector(`#${this.mapDomId}`) as SVGSVGElement;
+		if (!mapEl) throw new Error("SVG map element '#map' not found");
+		this.svgMap = mapEl;
+		this.svgCountries = Array.from(this.svgMap.querySelectorAll("path"));
+
+		const countryHighlightEl = this.container.querySelector(".country") as SVGSVGElement;
+		if (!countryHighlightEl) throw new Error("Country highlight SVG not found");
+		this.countryHighlightEl = countryHighlightEl;
+
+		this.countryNameEl = document.querySelector(".info span");
 	}
 
 	private createControls() {
@@ -253,6 +305,8 @@ export class InteractiveGlobe {
 
 		// On user interaction end (e.g. release)
 		this.controls.addEventListener("end", () => {
+
+			console.log(this.camera.position, this.globeGroup.position)
 			// Restore globe scale with bounce effect
 			gsap.to(this.globeGroup.scale, {
 				duration: 0.6,
@@ -266,6 +320,8 @@ export class InteractiveGlobe {
 			});
 		});
 
+
+
 	}
 
 	private createGlobe() {
@@ -275,11 +331,11 @@ export class InteractiveGlobe {
 		// Sea background — slightly larger sphere rendered inside-out
 		const seaGeometry = new THREE.IcosahedronGeometry(1.01, 20); // Slightly larger to avoid z-fighting
 		const seaMaterial = new THREE.MeshBasicMaterial({
-			color: 0x0077be,              // Ocean blue color
+			color: this.params.seaColor,              // Ocean blue color
+			transparent: true,
 			side: THREE.BackSide          // Render inside of the sphere
 		});
 		const seaMesh = new THREE.Mesh(seaGeometry, seaMaterial);
-		this.globeGroup.add(seaMesh);     // Add first so it renders behind everything else
 
 		// Create globe color layer (countries fill color)
 		this.globeColorMesh = new THREE.Mesh(
@@ -311,6 +367,7 @@ export class InteractiveGlobe {
 
 		// Add all globe layers to the main group
 		this.globeGroup.add(
+			seaMesh,
 			this.globeColorMesh,
 			this.globeStrokesMesh,
 			this.globeSelectionOuterMesh,
@@ -335,6 +392,7 @@ export class InteractiveGlobe {
 	}
 
 	private addEventListeners() {
+		let arr = [];
 		// Update canvas size on window resize to maintain correct aspect ratio
 		window.addEventListener("resize", () => this.updateSize());
 
@@ -348,6 +406,13 @@ export class InteractiveGlobe {
 
 		// Handle clicks on the globe to select countries
 		this.container.addEventListener("click", (e: MouseEvent) => {
+
+			// const camPos = this.camera.position.clone();
+			// const spherical = new THREE.Spherical().setFromVector3(camPos);
+			// arr.push({phi:spherical.phi, theta:spherical.theta})
+			// console.log('spherical', arr)
+
+
 			// Update pointer for raycasting
 			this.updatePointer(e.clientX, e.clientY);
 
@@ -535,7 +600,7 @@ export class InteractiveGlobe {
 	}
 
 	private detectCountryFromUV(uv = { x: 0, y: 0 }): number | null {
-		// 🎯 Convert UV coordinates (from raycasting) to SVG coordinate space
+		// Convert UV coordinates (from raycasting) to SVG coordinate space
 		const point = this.svgMap.createSVGPoint();
 		point.x = uv.x * this.svgViewBox[0];
 		point.y = (1 + this.offsetY - uv.y) * this.svgViewBox[1]; // Flip Y and apply vertical offset
@@ -544,19 +609,19 @@ export class InteractiveGlobe {
 		for (let i = 0; i < this.svgCountries.length; i++) {
 			const box = this.bBoxes[i]; // Cached bounding box for performance
 
-			// 🧱 First, do a fast bounding box check before more expensive fill check
+			// First, do a fast bounding box check before more expensive fill check
 			if (
 				point.x > box.x &&
 				point.x < box.x + box.width &&
 				point.y > box.y &&
 				point.y < box.y + box.height
 			) {
-				// ✅ Perform precise test to see if the point is inside the country's shape
+				// Perform precise test to see if the point is inside the country's shape
 				if (this.svgCountries[i].isPointInFill(point)) return i;
 			}
 		}
 
-		// ❌ No match found
+		//  No match found
 		return null;
 	}
 
@@ -572,63 +637,15 @@ export class InteractiveGlobe {
 		// These NDC coordinates are used by THREE.Raycaster to trace rays correctly
 	}
 
-	private getRotateSpeedFromZoom(zoom: number): number {
-		// Define zoom boundaries
-		const minZoom = 0.5;
-		const maxZoom = 3.0;
-
-		// Define rotation speed range
-		const minSpeed = 0.5;
-		const maxSpeed = 2.5;
-
-		// Normalize zoom value to a 0–1 range
-		const t = (zoom - minZoom) / (maxZoom - minZoom);
-
-		// Interpolate rotation speed: faster at low zoom, slower when zoomed in
-		const speed = minSpeed + (1 - t) * (maxSpeed - minSpeed);
-
-		// Clamp the result to ensure it's within valid speed range
-		return THREE.MathUtils.clamp(speed, minSpeed, maxSpeed);
-	}
-
-	private renderWithSimpleHover(idx: number) {
-		// Clone the empty SVG container so we don’t mutate the live one
-		const highlightSvg = this.countryHighlightEl.cloneNode(false) as SVGSVGElement;
-
-		// Apply the same sizing/viewport/colour attributes you use in updateSelectionTexture()
-		gsap.set(highlightSvg, {
-			attr: {
-				viewBox: `0 ${this.offsetY * this.svgViewBox[1]} ${this.svgViewBox[0]} ${this.svgViewBox[1]}`,
-				"stroke-width": this.params.strokeWidth,
-				stroke: this.params.strokeColor,
-				fill: this.params.hoverColor,
-				width: this.svgViewBox[0] * this.params.lowResScalingFactor,
-				height: this.svgViewBox[1] * this.params.lowResScalingFactor,
-			},
-		});
-
-		// Clone just the one path we’re hovering, and give it the hover fill
-		const origPath = this.svgCountries[idx];
-		const pathClone = origPath.cloneNode(true) as SVGPathElement;
-		pathClone.setAttribute("fill", this.params.hoverColor);
-
-		// Append it, serialize, store & apply
-		highlightSvg.appendChild(pathClone);
-		const svgData = new XMLSerializer().serializeToString(highlightSvg);
-		this.dataUris[idx] = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgData)}`;
-		this.setMapTexture(
-			this.globeSelectionOuterMesh.material as SetMapTextureMaterial,
-			this.dataUris[idx]
-		);
-	}
-
 	private render = () => {
+
 		// Adjust rotation speed based on zoom level
-		this.controls.rotateSpeed = this.getRotateSpeedFromZoom(this.camera.zoom);
-		this.controls.update(); // Apply any ongoing camera transformations (like damping)
+		//this.controls.rotateSpeed = this.getRotateSpeedFromZoom(this.camera.zoom);
+		//this.controls.update(); // Apply any ongoing camera transformations (like damping)
 
 		// Handle hover interaction only if allowed
 		if (this.isHoverable) {
+			//console.log(this.globeGroup.rotation)
 			// Update raycaster from current pointer position
 			this.rayCaster.setFromCamera(this.pointer, this.camera);
 
@@ -641,7 +658,7 @@ export class InteractiveGlobe {
 
 				if (idx !== null && idx !== this.hoveredCountryIdx) {
 
-					this.renderWithSimpleHover(idx);
+					//this.renderWithSimpleHover(idx);
 
 					// Show the country's name
 					if (this.countryNameEl) {
@@ -649,26 +666,20 @@ export class InteractiveGlobe {
 						this.countryNameEl.innerHTML = name + ` --  ${this.hoveredCountryIdx}` || "";
 					}
 				}
-				else {
-					this.setMapTexture(
-						this.globeSelectionOuterMesh.material as SetMapTextureMaterial,
-						this.dataUris[0]
-					);
-				}
+				// else {
+				// 	this.setMapTexture(
+				// 		this.globeSelectionOuterMesh.material as SetMapTextureMaterial,
+				// 		this.dataUris[0]
+				// 	);
+				// }
 			}
 		}
 
 		// Disable hover if device is touch-based
 		if (this.isTouchScreen && this.isHoverable) this.isHoverable = false;
-
 		// Final render
 		this.renderer.render(this.scene, this.camera);
 	};
-
-
-
-
-
 
 	private logCameraDirectionAsLatLon() {
 		const cameraToGlobe = new THREE.Vector3()
@@ -681,7 +692,7 @@ export class InteractiveGlobe {
 		const countryElement = this.svgCountries[this.hoveredCountryIdx];
 		const countryName = countryElement?.getAttribute("data-name");
 
-		console.log({ lat: lat.toFixed(2), lon: lon.toFixed(2), country: countryName });
+		console.log(`,"x": ${Number(lat.toFixed(2))}, "y": ${Number(lon.toFixed(2))}`);
 
 		if (this.obj[`${countryName}`]) {
 			this.obj[`${countryName}`].lat = lat.toFixed(2);
@@ -700,37 +711,77 @@ export class InteractiveGlobe {
 
 	}
 
+	/** STILL TESTING ************************************************************** */
+
 	public focusLatLon(coords: { lat: number, lon: number }) {
-		// Convert lat/lon to spherical coordinates
-		const phi = THREE.MathUtils.degToRad(90 - coords.lat);
+		const phi = THREE.MathUtils.degToRad(-90 - coords.lat);
 		const theta = THREE.MathUtils.degToRad(coords.lon);
 
-		// Convert to Cartesian coordinates (on unit sphere)
-		const target = new THREE.Vector3().setFromSphericalCoords(1, phi, theta);
+		// Get target direction and position
+		const targetDirection = new THREE.Vector3()
+			.setFromSphericalCoords(1, phi, theta)
+			.normalize();
 
-		// Calculate camera position (always Z offset)
-		const cameraDistance = 1.3;
-		const cameraPos = target.clone().multiplyScalar(-cameraDistance); // behind the target
+		// Get current camera position and direction
+		const currentCameraPos = this.camera.position.clone();
+		const currentDirection = currentCameraPos.clone().normalize();
 
-		// Animate camera position
-		gsap.to(this.camera.position, {
-			x: cameraPos.x,
-			y: cameraPos.y,
-			z: cameraPos.z,
+		// Calculate rotation between current and target directions
+		const rotationQuat = new THREE.Quaternion()
+			.setFromUnitVectors(currentDirection, targetDirection);
+
+		// Animation parameters
+		const animProxy = { progress: 0 };
+		const tempVector = new THREE.Vector3();
+		const tempQuat = new THREE.Quaternion();
+
+		this.controls.enabled = false;
+
+		gsap.to(animProxy, {
+			progress: 1,
 			duration: 1.5,
 			ease: "power2.inOut",
 			onUpdate: () => {
+				// Spherical interpolation of rotation
+				tempQuat.slerpQuaternions(
+					new THREE.Quaternion(), // Start at identity
+					rotationQuat,
+					animProxy.progress
+				);
+
+				// Apply rotation to current position
+				tempVector.copy(currentCameraPos)
+					.applyQuaternion(tempQuat);
+
+				// Set new camera position
+				this.camera.position.copy(tempVector);
 				this.camera.lookAt(0, 0, 0);
 				this.controls.update();
+			},
+			onComplete: () => {
+				this.controls.enabled = true;
 			}
 		});
-		//this.hoveredCountryIdx = 5;
-
-		// this.setMapTexture(
-		// 	this.globeSelectionOuterMesh.material as SetMapTextureMaterial,
-		// 	this.dataUris[5]
-		// );
 	}
+
+	public focusOnCountry(name: string) {
+		if (this.countryCoordsObj[name]) {
+			const coords = this.countryCoordsObj[name];
+
+			this.focusLatLon({
+				lat: coords.x,
+				lon: coords.y
+			});
+
+			this.setMapTexture(
+				this.globeSelectionOuterMesh.material as SetMapTextureMaterial,
+				this.dataUris[coords.i]
+			);
+		}
+	}
+
+	/** TODO ************************************************************** */
+
 
 	public clearSelection() {
 		this.hoveredCountryIdx = -1;
@@ -738,19 +789,14 @@ export class InteractiveGlobe {
 		// (this.globeSelectionOuterMesh.material as SetMapTextureMaterial).needsUpdate = true;
 	}
 
-	/********
-	 * todo
-	 * 
-	 * add destroy method to clean up resources
-	 * 
-	 * 
-	 */
 
 
 
 }
 
-const globe = await InteractiveGlobe.create(".globe-wrapper", {
+const globe = new InteractiveGlobe(".globe-wrapper");
+
+await globe.create({
 	infoPositionX: "center",
 	infoPositionY: "start",
 	colorType: "palette", // 'random' | 'palette'
@@ -776,27 +822,84 @@ const globe = await InteractiveGlobe.create(".globe-wrapper", {
 		'#DC143C', // Crimson Red
 		'#2E8B57'  // Sea Green
 	]
-});
+})
+
+// testing
+
+// let i = 0;
+// for (let countryName in globe.countryCoordsObj) {
+// 	setTimeout(() => {
+// 		globe.focusOnCountry(countryName);
+// 		//globe.rotateGlobeToLatLon('Greece')
+
+// 	}, 2000 * i)
+// 	i += 1;
+// }
 
 
 globe.container.addEventListener("countryClick", (e: Event) => {
 	const event = e as CustomEvent;
 	console.log("Clicked country:", event.detail.name, event.detail.index);
-
 	// You can now use event.detail.name, .index, .path, etc.
 });
 
+//setTimeout(() => {
+// 	console.log(globe)
+// 	//globe.clearSelection()
+// 	// Update the base texture to reflect any changes made to the SVG map
+// 	// globe.focusLatLon({
+// 	// "lat": -8.88,
+// 	// "lon": 59.47
+// 	// });
+//	globe.focusOnCountry("France"); // Focus on Finland
+//globe.rotateGlobeToCountry('South Africa')
+// 	for (let i = 0; i < list.length; i++) {
+// 		const countryName = list[i];
+// 		globe.setGlobeCountryColor(countryName, "red");
+// 	}
+//globe.focusOnCountry("Greece");
+//globe.setGlobeCountryColor("Russia", "red");
+//}, 3000);
+
 setTimeout(() => {
-	console.log(globe)
-	//globe.clearSelection()
-	// Update the base texture to reflect any changes made to the SVG map
-	// globe.focusLatLon({
-	//   "lat": 23.40,
-	//   "lon": 70.90
-	// });
-	//globe.focusOnCountry("Argentina"); // Focus on Finland
+	//globe.focusOnCountry("United States");
+	globe.setGlobeCountryColor("Russia", "red");
+}, 2000)
+
+// setTimeout(() => {
+//	globe.focusOnCountry("Canada");
+// }, 6000)
+
+// setTimeout(() => {
+// 	globe.focusOnCountry("China");
+// }, 4000)
+
+// setTimeout(() => {
+// 	globe.focusOnCountry("Greece");
+// }, 8000)
 
 
-	//globe.setGlobeCountryColor("Russian Federation", "red");
-}, 1000);
+// // Compute target spherical coordinates from country lat/lon:
+// const phiTarget   = THREE.MathUtils.degToRad( 90 - countryLat );
+// const thetaTarget = THREE.MathUtils.degToRad( countryLon );
 
+// // Record current camera spherical coords:
+// const camPos = this.camera.position.clone();
+// const spherical = new THREE.Spherical().setFromVector3(camPos);
+// const radius = spherical.radius; // keep distance fixed
+
+// // Tween the spherical angles with GSAP:
+// gsap.to(spherical, {
+//   duration: 1.5,
+//   phi: phiTarget,
+//   theta: thetaTarget,
+//   onUpdate: () => {
+//     // Recompute camera position at each frame
+//     const newPos = new THREE.Vector3().setFromSpherical(spherical).multiplyScalar(radius);
+//     this.camera.position.copy(newPos);
+//     this.camera.lookAt(0,0,0);
+//   },
+//   onComplete: () => {
+//     this.controls.enabled = true;
+//   }
+// });
