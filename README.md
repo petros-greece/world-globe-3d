@@ -1,7 +1,12 @@
 # world-globe-3d
 A world globe graphical UI to build upon based on three.js
 
-# USAGE EXAMPLES
+## 🚀 Demo
+
+👉 [Live Interactive Globe Demo](https://siteland.eu/tools/interactive-globe/)  
+Explore the interactive 3D globe in action.
+
+## USAGE EXAMPLES
 
 ```ts
 
