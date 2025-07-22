@@ -3,6 +3,7 @@ body {
   padding: 0;
   overflow: hidden;
   font-family: sans-serif;
+  background-color: black;
 }
 
 .page {
@@ -14,5 +15,9 @@ body {
   position: relative;
   z-index: 1;
 }
+
+
+
+
 
 
