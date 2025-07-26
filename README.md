@@ -2,17 +2,42 @@
 
 A world globe graphical UI to build upon based on three.js
 
-## 🚀 Demo
+## 🌍 Interactive Globe Demo
 
-👉 [Live Interactive Globe Demo](https://siteland.eu/tools/interactive-globe/)  
-Explore the interactive 3D globe in action.
+🔗 **[Live Demo](https://siteland.eu/tools/interactive-globe/)**  
+Explore the interactive 3D globe in real-time.
+
+---
+
+## 📦 Installation & Import
+
+### ➕ ESM (ECMAScript Modules)
+
+```ts
+import { InteractiveGlobe } from 'interactive-globe';
+```
+
+### ➕ CommonJS
+
+```js
+const { InteractiveGlobe } = require('interactive-globe');
+```
+
+### ➕ UMD (Browser via `<script>`)
+
+```html
+<script src="interactive-globe.umd.js"></script>
+<script>
+  const globe = new InteractiveGlobe.InteractiveGlobe(...);
+</script>
+```
 
 ## USAGE EXAMPLES
 
 ```ts
 
 import { GlobeParams, InteractiveGlobe } from "./InteractiveGlobe";
-
+bqH$WbFH=G*J5Ha
 /** 🌐 CREATE AND CONFIGURE THE GLOBE ****************************/
 
 // Instantiate the globe inside a DOM container
@@ -43,7 +68,7 @@ const globeParams: GlobeParams = {
 };
 
 // Initialize the globe with parameters
-await globe.create(globeParams);
+globe.create(globeParams);
 
 /** 🖱 COUNTRY INTERACTION EVENTS ******************************/
 
@@ -135,7 +160,7 @@ if (colorCountries) {
 // globe.focusOnCountry('Greece');
 // globe.setGlobeCountryColor("Russia", "red");
 // globe.addFlightPathBetweenCountries('Greece', 'Canada', '#ff0000');
-// await globe.refresh({ seaColor: 'green' });
+// globe.refresh({ seaColor: 'green' });
 // globe.destroy();
 
 */
