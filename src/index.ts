@@ -30,7 +30,7 @@ const globeParams: GlobeParams = {
 	clickScale: 1,
 }
 
-await globe.create(globeParams)
+globe.create(globeParams)
 
 globe.container.addEventListener("countryClick", (e: Event) => {
 	const event = e as CustomEvent;

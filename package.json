@@ -1,28 +1,39 @@
 {
-  "name": "world-globe-3d",
+  "name": "interactive-globe",
   "version": "1.0.0",
-  "description": "A world globe graphical UI to build upon based on three.js",
-  "main": "index.js",
+  "description": "A world globe graphical UI to build upon, based on three.js",
+  "main": "dist/InteractiveGlobe.js",
+  "types": "dist/InteractiveGlobe.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "vite build",
-    "dev": "npx vite"
+    "start": "vite",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "types": "tsc --emitDeclarationOnly",
+    "test": "echo \"No test defined\" && exit 0"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/petros-greece/world-globe-3d.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "keywords": [
+    "threejs",
+    "globe",
+    "3d",
+    "interactive",
+    "webgl",
+    "earth",
+    "typescript"
+  ],
+  "author": "Petros Greece",
+  "license": "MIT",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/petros-greece/world-globe-3d/issues"
   },
   "homepage": "https://github.com/petros-greece/world-globe-3d#readme",
   "devDependencies": {
     "@types/gsap": "^1.20.2",
-    "@types/node": "^24.0.12",
+    "@types/node": "^20.0.0",
     "@types/three": "^0.178.1",
     "typescript": "^5.8.3",
     "vite": "^7.0.3"

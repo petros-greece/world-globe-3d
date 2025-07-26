@@ -1,17 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { InteractiveGlobeVars, CountryPath } from './InteractiveGlobeVars';
 import gsap from 'gsap';
 
 const list: string[] = [];
-
-interface CountryPath {
-  path: string;
-  name: string;
-  x: number;
-  y: number;
-  lat: number;
-  lon: number;
-}
 
 interface BoundingBox {
   x: number;
@@ -59,7 +51,7 @@ export type GlobeParams = {
   autoRotateSpeed?: number;
 }
 
-export class InteractiveGlobe {
+export class InteractiveGlobe extends InteractiveGlobeVars{
 
   public obj: any = {
     points: [],
@@ -127,18 +119,20 @@ export class InteractiveGlobe {
   };
 
   constructor(wrapperSelector: string) {
+    super();
     const container = document.querySelector(wrapperSelector);
     if (!container) throw new Error("Container not found");
     this.container = container as HTMLElement;
     this.container.style.position = 'relative';
   }
 
-  async create(params: GlobeParams) {
-
+  create(params: GlobeParams) {
     this.params = { ...this.params, ...params };
+    const countries: CountryPath[] = this.countryData;
+    console.log(countries.forEach((e:any)=>{
+      console.log(e.x-e.lat, e.y - e.lon, e.name)
 
-    const response = await fetch("./country-paths.json");
-    const countries: CountryPath[] = await response.json();
+    }))
     this.createGlobeDOMStructure();
     this.renderSvgMapOnDOM(countries);
     this.generateCoordsObj(countries);
@@ -960,11 +954,11 @@ export class InteractiveGlobe {
 
   }
 
-  public async refresh(params: GlobeParams) {
+  public refresh(params: GlobeParams) {
     this.destroy();
 
     // Reinitialize with new parameters
-    await this.create(params);
+    this.create(params);
   }
 
   /**ZOOM ********************** */
