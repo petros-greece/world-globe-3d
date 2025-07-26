@@ -452,9 +452,7 @@ export default class InteractiveGlobe extends InteractiveGlobeVars {
       this.isTouchScreen = true;
     });
 
-    let path: any;
-    let idx: any;
-    let name: any;
+    let countryObj:any = {};
 
     // Handle clicks on the globe to select countries
     this.addListener(this.container, "click", (e: MouseEvent) => {
@@ -469,37 +467,33 @@ export default class InteractiveGlobe extends InteractiveGlobeVars {
       if (intersects.length) {
         // Convert UV coordinates into country index
         const uv = intersects[0].uv;
-        idx = this.detectCountryFromUV(uv);
+        countryObj.idx = this.detectCountryFromUV(uv);
 
-        if (idx !== null) {
-          this.hoveredCountryIdx = idx;
+        if (countryObj.idx !== null) {
+          this.hoveredCountryIdx = countryObj.idx;
           // Display the name of the clicked country
-          path = this.svgCountries[idx];
-          name = path.getAttribute("data-name") ?? "";
-
+          countryObj.path = this.svgCountries[countryObj.idx];
+          countryObj.name = countryObj.path.getAttribute("data-name") ?? "";
+          countryObj = {...countryObj, ...this.countryCoordsObj[countryObj.name]}
           // Dispatch a custom event
           this.container.dispatchEvent(new CustomEvent("countryClick", {
-            detail: {
-              name,
-              index: idx,
-              path,
-            },
+            detail: countryObj,
             bubbles: true, // optional, allows the event to bubble up
           }));
 
-          if (this.countryNameEl) this.countryNameEl.innerHTML = name;
+          if (this.countryNameEl) this.countryNameEl.innerHTML = countryObj.name;
 
           // Highlight the selected country using its unique texture
           // This should be done from the displatch
           this.setMapTexture(
             this.globeSelectionOuterMesh.material as SetMapTextureMaterial,
-            this.dataUris[idx]
+            this.dataUris[countryObj.idx]
           );
 
           // Optional debug logging for lat/lon the camera is facing
           //this.logCameraDirectionAsLatLon();
           const intersectPoint = intersects[0].point;
-          this.logGlobeCoords(intersectPoint, name);
+          this.logGlobeCoords(intersectPoint, countryObj.name);
         }
       }
     });
@@ -507,11 +501,7 @@ export default class InteractiveGlobe extends InteractiveGlobeVars {
     this.addListener(this.container, "dblclick", (e: MouseEvent) => {
       // Dispatch a custom event
       this.container.dispatchEvent(new CustomEvent("countrydblClick", {
-        detail: {
-          name,
-          index: idx,
-          path,
-        },
+        detail: countryObj,
         bubbles: true, // optional, allows the event to bubble up
       }));
       //console.log(name, idx, path)
@@ -1140,6 +1130,7 @@ export default class InteractiveGlobe extends InteractiveGlobeVars {
     // Remove from tracking array
     this.obj.points.splice(index, 1);
   }
+
   /** PULSING POINT ********************************************************************/
 
   public addPulsingPoint(

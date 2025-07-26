@@ -37,7 +37,7 @@ const { InteractiveGlobe } = require('interactive-globe');
 ```ts
 
 import { GlobeParams, InteractiveGlobe } from "./InteractiveGlobe";
-bqH$WbFH=G*J5Ha
+
 /** 🌐 CREATE AND CONFIGURE THE GLOBE ****************************/
 
 // Instantiate the globe inside a DOM container

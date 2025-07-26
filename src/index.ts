@@ -34,23 +34,27 @@ globe.create(globeParams)
 
 globe.container.addEventListener("countryClick", (e: Event) => {
 	const event = e as CustomEvent;
-	console.log("Clicked country:", event.detail.name, event.detail.index);
+	console.log("Clicked country:", event.detail.name, event.detail.idx);
 });
-
 
 globe.container.addEventListener("countrydblClick", (e: Event) => {
 	const event = e as CustomEvent;
-	console.log("Clicked double click country:", event.detail.name, event.detail.index);
+	console.log("Clicked double click country:", event.detail);
 });
 
 // globe.addPulsingPoint({ x: 0, y: 0 }, '#ff0000');
-//globe.focusOnCountry('Australia');
+// globe.focusOnCountry('Australia');
 
 // globe.addLabeledPoint({
 // 	coords: { x: -33.2, y: -221.62 },
 // 	color: '#ff5733',
 // 	labelText: `Australia`
 // });
+
+// setTimeout(()=>{
+
+// 	globe.removeLabeledPoint(0)
+// }, 2000)
 
 // globe.addLabeledPointToCountry({
 // 	name: 'Australia'
@@ -61,43 +65,6 @@ globe.container.addEventListener("countrydblClick", (e: Event) => {
 // globe.destroy()
 // await globe.refresh({ seaColor: 'green' });
 
-
-
-/** FLIGHT PATHS ******************************** */
-
-const showFlightPaths = false;
-
-if (showFlightPaths) {
-
-	//globe.addFlightPathBetweenCountries('Greece', 'Brazil', '#ff0000')
-	//globe.addFlightPathBetweenCountries('Brazil', 'United States', '#ff0000')
-
-	// Multiple flight paths
-	// const routes = [
-	// 	{ from: [40.7128, -74.0060], to: [51.5074, -0.1278], color: '#ff0000' }, // Rome-Tokyo
-	// 	{ from: [30, 280], to: [45, 300], color: '#00ff00' },  // Rome-Moscow
-	// 	{ from: [45, 300], to: [155, 220], color: '#0000ff' }  // Moscow-Tokyo
-	// ];
-
-
-
-
-
-	// routes.forEach(route => {
-	// 	globe.addFlightPath(
-	// 		route.from[0], route.from[1],
-	// 		route.to[0], route.to[1],
-	// 		route.color,
-	// 		{
-	// 			altitude: .9,
-	// 			animationSpeed: 2,
-	// 			thickness: 0.005,
-	// 			pulseSize: 0.05
-	// 		}
-	// 	);
-	// });
-
-}
 
 /** LABELED POINTS ******************************** */
 
@@ -118,38 +85,45 @@ if (showPoints) {
 
 /** FOCUS ON ALL COUNTRIES ******************************** */
 
-const focusOnAllCountries = true;
+const focusOnAllCountries = false;
 
 if (focusOnAllCountries) {
-
-	let ii = 0;
-	let prevNAme = '';
-	for (let countryName in globe.countryCoordsObj) {
-
-		setTimeout(() => {
-
-			let jjj = globe.countryCoordsObj[countryName]
-			globe.focusOnCountry(countryName);
-			//globe.zoomToCountry(countryName, Math.ceil(Math.random() * 6))
-			// globe.addLabeledPoint({
-			// 	coords: { x: jjj.lat, y: jjj.lon },
-			// 	color: '#ff5733',
-			// 	labelText: `${countryName.slice(0, 3)}`
-			// });
-			globe.addLabeledPointToCountry({
-				name: countryName
-			})
-
-			// if (prevNAme) {
-			// 	globe.addFlightPathBetweenCountries(prevNAme, countryName, '#ff0000')
-			// }
-
-			prevNAme = countryName;
-
-		}, 2000 * ii)
-		ii += 1;
-	}
-
+    let ii = 0;
+    let prevName = '';
+    const countryNames = Object.keys(globe.countryCoordsObj);
+    
+    function processCountry(index: number) {
+        if (index >= countryNames.length) return;
+        
+        const countryName = countryNames[index];
+        const coords = globe.countryCoordsObj[countryName];
+        
+        globe.focusOnCountry(countryName);
+        
+        // Add new point
+        globe.addLabeledPoint({
+            coords: { x: coords.lat, y: coords.lon },
+            color: '#ff5733',
+            labelText: `${countryName.slice(0, 3)}`
+        });
+        
+        // Optional: Add flight path
+        if (prevName) {
+            globe.addFlightPathBetweenCountries(prevName, countryName, '#ff0000');
+        }
+                // Remove previous point (if not first iteration)
+        if (index > 1) {
+            globe.removeLabeledPoint(0);
+						globe.removeFlightPath(0)
+        }
+        prevName = countryName;
+        
+        // Process next country after delay
+        setTimeout(() => processCountry(index + 1), 2000);
+    }
+    
+    // Start processing
+    processCountry(0);
 }
 
 /**COLOR COUNTRIES ******************************************************************** */
