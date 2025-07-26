@@ -3,8 +3,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { InteractiveGlobeVars, CountryPath } from './InteractiveGlobeVars';
 import gsap from 'gsap';
 
-const list: string[] = [];
-
 interface BoundingBox {
   x: number;
   y: number;
@@ -51,7 +49,7 @@ export type GlobeParams = {
   autoRotateSpeed?: number;
 }
 
-export class InteractiveGlobe extends InteractiveGlobeVars{
+export default class InteractiveGlobe extends InteractiveGlobeVars {
 
   public obj: any = {
     points: [],
@@ -59,7 +57,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
     countryAnimations: {}
   };
 
-  public countryCameraCoordsObj: { [countryName: string]: { x: number; lat: number, lon: number, i: number } } = {};
+  public countryCoordsObj: { [countryName: string]: { x: number; lat: number, lon: number, i: number } } = {};
   private listeners: GlobeListener[] = [];
 
   public container!: HTMLElement;
@@ -91,10 +89,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
   private readonly offsetY = -0.1;
   private readonly svgViewBox = [2000, 1000];
   private readonly mapDomId = 'map';
-
-  private dynamicRender: Function = () => {
-
-  };
+  private dynamicRender: Function = (() => { });
 
   private params = {
     strokeColor: "#111111",
@@ -130,15 +125,9 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
 
   create(params: GlobeParams) {
     this.params = { ...this.params, ...params };
-    const countries: CountryPath[] = this.countryData;
-    countries.forEach((e:any)=>{
-      console.log(e.x-e.lat, e.y - e.lon, e.name)
-      delete e.y;
-    })
-    console.log(countries)
     this.createGlobeDOMStructure();
-    this.renderSvgMapOnDOM(countries);
-    this.generateCoordsObj(countries);
+    this.renderSvgMapOnDOM();
+    this.generateCoordsObj();
     this.initGlobeDOMProprs();
     this.init();
 
@@ -204,7 +193,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
   }
 
   // Fetch and render the SVG map from a JSON file
-  private renderSvgMapOnDOM(countries: any) {
+  private renderSvgMapOnDOM() {
 
     const svgNS = "http://www.w3.org/2000/svg";
 
@@ -218,6 +207,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
     svg.style.height = '0';
     svg.style.overflow = 'hidden';
     svg.style.pointerEvents = 'none';  // just in case
+    const countries = [...this.countryData];
     for (const country of countries) {
       const path = document.createElementNS(svgNS, "path");
       path.setAttribute("d", country.path);
@@ -254,9 +244,9 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
 
   }
 
-  private generateCoordsObj(countries: any) {
+  private generateCoordsObj() {
+    const countries = [...this.countryData];
     for (let i = 0; i < countries.length; i++) {
-
       const country = countries[i];
       // Ensure each country has a name and path
       if (!country.name || !country.path) {
@@ -264,19 +254,14 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
         continue;
       }
       if (country.lat && country.lon) {
-        this.countryCameraCoordsObj[country.name] = {
+        this.countryCoordsObj[country.name] = {
           x: country.x,
           lat: country.lat,
           lon: country.lon,
           i: i
         };
       }
-      else {
-        //	list.push(country.name);
-      }
-      list.push(country.name);
     }
-    //console.log(countries)
   }
 
   /**GLOBE IINITIALAZATION ***************************************************************/
@@ -307,8 +292,6 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
 
     //start the loop
     gsap.ticker.add(this.render);
-
-    //this.scene.add(marker);
 
   }
 
@@ -890,8 +873,8 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
   }
 
   public focusOnCountry(name: string) {
-    if (this.countryCameraCoordsObj[name]) {
-      const coords = this.countryCameraCoordsObj[name];
+    if (this.countryCoordsObj[name]) {
+      const coords = this.countryCoordsObj[name];
 
       this.focusLatLon({
         lat: coords.x,
@@ -995,8 +978,8 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
   }
 
   public zoomToCountry(countryName: string, zoomLevel: number = 5, duration: number = 1.5): void {
-    if (this.countryCameraCoordsObj[countryName]) {
-      const coords = this.countryCameraCoordsObj[countryName];
+    if (this.countryCoordsObj[countryName]) {
+      const coords = this.countryCoordsObj[countryName];
       this.focusLatLon({ lat: coords.x, lon: coords.lon + 86.5 });
       this.animateZoom(zoomLevel, duration);
     }
@@ -1108,14 +1091,14 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
     labelText = '',
     size = 0.005
   }: {
-    name:string;
+    name: string;
     color?: string;
     labelText?: string;
     size?: number;
-  }){
-    const c = this.countryCameraCoordsObj[name];
+  }) {
+    const c = this.countryCoordsObj[name];
     const label = labelText || name;
-    const coords = {x: c.lat, y:c.lon};
+    const coords = { x: c.lat, y: c.lon };
     this.addLabeledPoint({
       coords: coords, color: color, labelText: label, size: size
     })
@@ -1329,8 +1312,8 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
       pulseSize?: number
     } = {}
   ) {
-    const c1 = this.countryCameraCoordsObj[startCountry];
-    const c2 = this.countryCameraCoordsObj[endCountry];
+    const c1 = this.countryCoordsObj[startCountry];
+    const c2 = this.countryCoordsObj[endCountry];
     const p1 = { x: c1.lat, y: c1.lon };
     const p2 = { x: c2.lat, y: c2.lon };
     this.addFlightPath(p1, p2, color, options);

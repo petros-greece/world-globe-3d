@@ -1,4 +1,4 @@
-import { GlobeParams, InteractiveGlobe } from "./InteractiveGlobe";
+import { GlobeParams, default as InteractiveGlobe } from "./InteractiveGlobe";
 
 /** CREATE THE GLOBE ******************************** */
 
@@ -124,11 +124,11 @@ if (focusOnAllCountries) {
 
 	let ii = 0;
 	let prevNAme = '';
-	for (let countryName in globe.countryCameraCoordsObj) {
+	for (let countryName in globe.countryCoordsObj) {
 
 		setTimeout(() => {
 
-			let jjj = globe.countryCameraCoordsObj[countryName]
+			let jjj = globe.countryCoordsObj[countryName]
 			globe.focusOnCountry(countryName);
 			//globe.zoomToCountry(countryName, Math.ceil(Math.random() * 6))
 			// globe.addLabeledPoint({
