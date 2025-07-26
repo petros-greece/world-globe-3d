@@ -1105,42 +1105,41 @@ export default class InteractiveGlobe extends InteractiveGlobeVars {
   }
 
   public removeLabeledPoint(index: number): void {
-    if (!this.obj.points || index < 0 || index >= this.obj.points.length) {
-      return;
-    }
+    if (!this.obj.points || index < 0 || index >= this.obj.points.length) return;
 
     const entry = this.obj.points[index];
     const { point, label } = entry;
 
-    // 1 Remove point mesh from globe
-    this.globeGroup.remove(point);
-
-    // 2 Dispose point geometry & material
-    if ((point as THREE.Mesh).geometry) {
-      (point as THREE.Mesh).geometry.dispose();
+    // Remove point from globeGroup
+    if (point.parent) {
+      point.parent.remove(point);
     }
-    const pointMat = (point as THREE.Mesh).material;
-    if (Array.isArray(pointMat)) {
-      pointMat.forEach(m => m.dispose());
+
+    // Remove label from scene
+    if (label.parent) {
+      label.parent.remove(label);
+    }
+
+    // Dispose resources
+    point.geometry?.dispose();
+    if (Array.isArray(point.material)) {
+      point.material.forEach((m: { dispose: () => any; }) => m.dispose());
     } else {
-      pointMat.dispose();
+      point.material?.dispose();
     }
 
-    // 3 Remove label wrapper from scene
-    this.scene.remove(label);
-
-    // 4 Dispose label’s texture & material
-    const sprite = label.children[0] as THREE.Sprite;
-    const spriteMat = (sprite.material as THREE.SpriteMaterial);
-    if (spriteMat.map) {
-      spriteMat.map.dispose();
+    // Dispose label resources
+    if (label.children.length > 0) {
+      const sprite = label.children[0] as THREE.Sprite;
+      const mat = sprite.material as THREE.SpriteMaterial;
+      mat.map?.dispose();
+      mat.dispose();
+      sprite.geometry?.dispose();
     }
-    spriteMat.dispose();
 
-    // 5 Remove from your internal array so updateVisibility no longer runs
+    // Remove from tracking array
     this.obj.points.splice(index, 1);
   }
-
   /** PULSING POINT ********************************************************************/
 
   public addPulsingPoint(
