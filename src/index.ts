@@ -9,8 +9,8 @@ const globeParams: GlobeParams = {
 	infoPositionY: "start",
 	colorType: "random", // 'random' | 'palette' | 'map'
 	palette: [
-		'#FF6B6B', 
-		'#4ECDC4', 
+		'#FF6B6B',
+		'#4ECDC4',
 	],
 	strokeColor: "#111111",
 	defaultColor: "#9a9591",
@@ -44,7 +44,18 @@ globe.container.addEventListener("countrydblClick", (e: Event) => {
 });
 
 // globe.addPulsingPoint({ x: 0, y: 0 }, '#ff0000');
-// globe.focusOnCountry('Greece');
+//globe.focusOnCountry('Australia');
+
+// globe.addLabeledPoint({
+// 	coords: { x: -33.2, y: -221.62 },
+// 	color: '#ff5733',
+// 	labelText: `Australia`
+// });
+
+// globe.addLabeledPointToCountry({
+// 	name: 'Australia'
+// })
+
 // globe.setGlobeCountryColor("Russia", "red");
 // globe.addFlightPathBetweenCountries('Greece', 'Canada', '#ff0000')
 // globe.destroy()
@@ -58,8 +69,8 @@ const showFlightPaths = false;
 
 if (showFlightPaths) {
 
-	globe.addFlightPathBetweenCountries('Greece', 'Brazil', '#ff0000')
-	globe.addFlightPathBetweenCountries('Brazil', 'United States', '#ff0000')
+	//globe.addFlightPathBetweenCountries('Greece', 'Brazil', '#ff0000')
+	//globe.addFlightPathBetweenCountries('Brazil', 'United States', '#ff0000')
 
 	// Multiple flight paths
 	// const routes = [
@@ -107,7 +118,7 @@ if (showPoints) {
 
 /** FOCUS ON ALL COUNTRIES ******************************** */
 
-const focusOnAllCountries = false;
+const focusOnAllCountries = true;
 
 if (focusOnAllCountries) {
 
@@ -118,13 +129,16 @@ if (focusOnAllCountries) {
 		setTimeout(() => {
 
 			let jjj = globe.countryCameraCoordsObj[countryName]
-			//globe.focusOnCountry(countryName);
-			globe.zoomToCountry(countryName, Math.ceil(Math.random()*6))
-			globe.addLabeledPoint({
-				coords: { x: jjj.lat, y: jjj.lon },
-				color: '#ff5733',
-				labelText: `${countryName.slice(0, 3)}`
-			});
+			globe.focusOnCountry(countryName);
+			//globe.zoomToCountry(countryName, Math.ceil(Math.random() * 6))
+			// globe.addLabeledPoint({
+			// 	coords: { x: jjj.lat, y: jjj.lon },
+			// 	color: '#ff5733',
+			// 	labelText: `${countryName.slice(0, 3)}`
+			// });
+			globe.addLabeledPointToCountry({
+				name: countryName
+			})
 
 			// if (prevNAme) {
 			// 	globe.addFlightPathBetweenCountries(prevNAme, countryName, '#ff0000')

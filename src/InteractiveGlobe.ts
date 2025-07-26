@@ -59,7 +59,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
     countryAnimations: {}
   };
 
-  public countryCameraCoordsObj: { [countryName: string]: { x: number; y: number, lat: number, lon: number, i: number } } = {};
+  public countryCameraCoordsObj: { [countryName: string]: { x: number; lat: number, lon: number, i: number } } = {};
   private listeners: GlobeListener[] = [];
 
   public container!: HTMLElement;
@@ -92,7 +92,9 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
   private readonly svgViewBox = [2000, 1000];
   private readonly mapDomId = 'map';
 
-  private dynamicRender: Function = () => {};
+  private dynamicRender: Function = () => {
+
+  };
 
   private params = {
     strokeColor: "#111111",
@@ -129,10 +131,11 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
   create(params: GlobeParams) {
     this.params = { ...this.params, ...params };
     const countries: CountryPath[] = this.countryData;
-    console.log(countries.forEach((e:any)=>{
+    countries.forEach((e:any)=>{
       console.log(e.x-e.lat, e.y - e.lon, e.name)
-
-    }))
+      delete e.y;
+    })
+    console.log(countries)
     this.createGlobeDOMStructure();
     this.renderSvgMapOnDOM(countries);
     this.generateCoordsObj(countries);
@@ -260,10 +263,9 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
         //console.warn(`Country data missing name or path:`, country);
         continue;
       }
-      if (country.x && country.y) {
+      if (country.lat && country.lon) {
         this.countryCameraCoordsObj[country.name] = {
           x: country.x,
-          y: country.y,
           lat: country.lat,
           lon: country.lon,
           i: i
@@ -277,7 +279,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
     //console.log(countries)
   }
 
-  /** GLOBE IINITIALAZATION ************************************************************** */
+  /**GLOBE IINITIALAZATION ***************************************************************/
 
   private init() {
     this.scene = new THREE.Scene();
@@ -367,7 +369,6 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
         },
       });
     });
-
 
 
   }
@@ -563,7 +564,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
 
   }
 
-  /** TEXTURES ************************************************************** */
+  /** TEXTURES ***************************************************************/
 
   private setMapTexture(material: SetMapTextureMaterial, URI: string) {
     if (material.map) material.map.dispose(); // Add before loading new texture
@@ -678,7 +679,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
     );
   }
 
-  /** EVENT RELATED ************************************************************** */
+  /** EVENT RELATED ***************************************************************/
 
   private getRotateSpeedFromZoom(zoom: number): number {
     // Customize this formula as you like — lower zoom = slower rotation
@@ -835,7 +836,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
 
   }
 
-  /** STILL TESTING ************************************************************** */
+  /** STILL TESTING ***************************************************************/
 
   public focusLatLon(coords: { lat: number, lon: number }) {
     const phi = THREE.MathUtils.degToRad(-90 - coords.lat);
@@ -894,7 +895,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
 
       this.focusLatLon({
         lat: coords.x,
-        lon: coords.y
+        lon: coords.lon + 86.5
       });
 
       this.setMapTexture(
@@ -908,7 +909,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
     }
   }
 
-  /** TODO ************************************************************** */
+  /** TODO ***************************************************************/
 
   public clearSelection() {
     this.hoveredCountryIdx = -1;
@@ -961,7 +962,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
     this.create(params);
   }
 
-  /**ZOOM ********************** */
+  /**ZOOM **********************/
 
   public animateZoom(targetZoom: number, duration: number = 1): void {
     if (this.camera instanceof THREE.OrthographicCamera) {
@@ -996,12 +997,12 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
   public zoomToCountry(countryName: string, zoomLevel: number = 5, duration: number = 1.5): void {
     if (this.countryCameraCoordsObj[countryName]) {
       const coords = this.countryCameraCoordsObj[countryName];
-      this.focusLatLon({ lat: coords.x, lon: coords.y });
+      this.focusLatLon({ lat: coords.x, lon: coords.lon + 86.5 });
       this.animateZoom(zoomLevel, duration);
     }
   }
 
-  /** POINT WITH LABEL ************************************************************** */
+  /** POINT WITH LABEL ***************************************************************/
 
   private createTextSprite({
     text,
@@ -1099,6 +1100,25 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
     }
 
     return point;
+  }
+
+  public addLabeledPointToCountry({
+    name,
+    color = '#ff0000',
+    labelText = '',
+    size = 0.005
+  }: {
+    name:string;
+    color?: string;
+    labelText?: string;
+    size?: number;
+  }){
+    const c = this.countryCameraCoordsObj[name];
+    const label = labelText || name;
+    const coords = {x: c.lat, y:c.lon};
+    this.addLabeledPoint({
+      coords: coords, color: color, labelText: label, size: size
+    })
   }
 
   public removeLabeledPoint(index: number): void {
@@ -1240,7 +1260,7 @@ export class InteractiveGlobe extends InteractiveGlobeVars{
     this.obj.pulsingPoints.splice(index, 1);
   }
 
-  /** FLIGHT PATH WITH PULSE ANIMATION ************************************************************** */
+  /** FLIGHT PATH WITH PULSE ANIMATION ***************************************************************/
 
   public addFlightPath(
     startPoint: { x: number, y: number },
